@@ -260,7 +260,7 @@ const Users: React.FC = () => {
                 Manage pharmacy staff, administrators, and system access accounts.
               </div>
               <div className="text-[11px] text-slate-400 mt-1">
-                Plan Option {staffPlan}{staffPlan === 5 ? " (Custom)" : ""}: Super Admin {usedSuper}/{formatPlanCap(planLimits.superadmin)} · Admin {usedAdmin}/{formatPlanCap(planLimits.admin)} · Staff {usedStaff}/{formatPlanCap(planLimits.staff)}
+                Plan (Fully Customizable): Super Admin {usedSuper}/{formatPlanCap(planLimits.superadmin)} · Admin {usedAdmin}/{formatPlanCap(planLimits.admin)} · Staff {usedStaff}/{formatPlanCap(planLimits.staff)}
               </div>
             </div>
             <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full sm:w-auto">

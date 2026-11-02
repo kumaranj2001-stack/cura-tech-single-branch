@@ -1275,22 +1275,22 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           };
           const ff = snapshot.data().featureFlags as Partial<FeatureFlags> | undefined;
           if (ff) setFlags({ ...DEFAULT_FEATURE_FLAGS, ...ff });
-          if (isStaffPlanTier(snapshot.data().staffPlan)) {
-            const nextPlan = snapshot.data().staffPlan;
-            setStaffPlanState(nextPlan);
+          const nextPlan: StaffPlanTier = isStaffPlanTier(snapshot.data().staffPlan)
+            ? snapshot.data().staffPlan
+            : DEFAULT_STAFF_PLAN;
+          setStaffPlanState(nextPlan);
+          try {
+            localStorage.setItem("gp_staff_plan", String(nextPlan));
+          } catch {}
+          const customLim = snapshot.data().customStaffPlanLimits as StaffPlanLimits | undefined;
+          if (customLim) {
+            setCustomStaffPlanLimitsState(customLim);
             try {
-              localStorage.setItem("gp_staff_plan", String(nextPlan));
+              localStorage.setItem("gp_custom_staff_limits", JSON.stringify(customLim));
             } catch {}
-            const customLim = snapshot.data().customStaffPlanLimits as StaffPlanLimits | undefined;
-            if (customLim) {
-              setCustomStaffPlanLimitsState(customLim);
-              try {
-                localStorage.setItem("gp_custom_staff_limits", JSON.stringify(customLim));
-              } catch {}
-            }
-            if (!planAllowsMultiBranch(nextPlan, customLim || customStaffPlanLimitsRef.current)) {
-              setViewBranchId(null);
-            }
+          }
+          if (!planAllowsMultiBranch(nextPlan, customLim || customStaffPlanLimitsRef.current)) {
+            setViewBranchId(null);
           }
           const pay = snapshot.data().payment as PaymentSettings | undefined;
           if (pay) setPaymentState(pay);

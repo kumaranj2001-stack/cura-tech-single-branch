@@ -314,8 +314,8 @@ export interface FeatureFlags {
   minStockFeature: boolean;
 }
 
-/* ── Developer-controlled staff / account plans (mutually exclusive) ──── */
-export type StaffPlanTier = 1 | 2 | 3 | 4 | 5;
+/* ── Developer-controlled staff / account plans ──── */
+export type StaffPlanTier = 5;
 
 export interface StaffPlanLimits {
   superadmin: number;
@@ -335,31 +335,24 @@ export const STAFF_PLAN_OPTIONS: {
   hint: string;
   limits: StaffPlanLimits;
 }[] = [
-  { tier: 1, label: "Option 1 — One admin, two staff", hint: "Permits 1 admin (to manage staff) and 2 staff members. No super admin.", limits: { superadmin: 0, admin: 1, staff: 2 } },
-  { tier: 2, label: "Option 2 — Two admins, three staff", hint: "Permits 2 admins and 3 staff members.", limits: { superadmin: 0, admin: 2, staff: 3 } },
-  { tier: 3, label: "Option 3 — Two admins, four staff", hint: "Permits 2 admins and 4 staff members.", limits: { superadmin: 0, admin: 2, staff: 4 } },
-  { tier: 4, label: "Option 4 — Full roster", hint: "Permits 1 super admin, 4 admins, and unlimited staff members.", limits: { superadmin: 1, admin: 4, staff: Number.POSITIVE_INFINITY } },
-  { tier: 5, label: "Option 5 — Fully Customizable", hint: "Customizable quotas per role (Super Admin, Admin, Staff). Defined and managed by Super Admins.", limits: DEFAULT_CUSTOM_STAFF_LIMITS },
+  { tier: 5, label: "Fully Customizable", hint: "Customizable quotas per role (Super Admin, Admin, Staff). Defined and managed by Super Admins.", limits: DEFAULT_CUSTOM_STAFF_LIMITS },
 ];
 
 export const planAllowsMultiBranch = (_tier?: StaffPlanTier, _customLimits?: StaffPlanLimits) => false;
 
-export const DEFAULT_STAFF_PLAN: StaffPlanTier = 1;
+export const DEFAULT_STAFF_PLAN: StaffPlanTier = 5;
 
-export const staffPlanLimits = (tier: StaffPlanTier, customLimits?: StaffPlanLimits): StaffPlanLimits => {
-  if (tier === 5) {
-    const base = customLimits ?? DEFAULT_CUSTOM_STAFF_LIMITS;
-    return {
-      superadmin: typeof base.superadmin === "number" ? Math.max(0, base.superadmin) : 0,
-      admin: typeof base.admin === "number" ? Math.max(0, base.admin) : 0,
-      staff: typeof base.staff === "number" ? Math.max(0, base.staff) : 0,
-    };
-  }
-  return STAFF_PLAN_OPTIONS.find((o) => o.tier === tier)?.limits ?? STAFF_PLAN_OPTIONS[0].limits;
+export const staffPlanLimits = (_tier?: StaffPlanTier | number, customLimits?: StaffPlanLimits): StaffPlanLimits => {
+  const base = customLimits ?? DEFAULT_CUSTOM_STAFF_LIMITS;
+  return {
+    superadmin: typeof base.superadmin === "number" ? Math.max(0, base.superadmin) : 0,
+    admin: typeof base.admin === "number" ? Math.max(0, base.admin) : 0,
+    staff: typeof base.staff === "number" ? Math.max(0, base.staff) : 0,
+  };
 };
 
 export const isStaffPlanTier = (value: unknown): value is StaffPlanTier =>
-  value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
+  value === 5;
 
 export const formatPlanCap = (n: number) => (Number.isFinite(n) ? String(n) : "unlimited");
 
