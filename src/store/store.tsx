@@ -228,10 +228,6 @@ function scopeBranchOf(_user: User | null, _viewBranchId: string | null): string
   return "br_main";
 }
 
-function inScope(_record: { branchId?: string } | undefined, _branchId: string | null): boolean {
-  return true;
-}
-
 function scopeData(full: AppData, _branchId: string | null): AppData {
   return full;
 }
@@ -254,64 +250,6 @@ export interface BranchBackupFile {
   data: AppData;
   payment?: PaymentSettings;
   profile?: import("./types").StoreProfile;
-}
-
-function stampBranch<T extends { branchId?: string }>(rows: T[] | undefined, branchId: string): T[] {
-  return (rows || []).map((r) => ({ ...r, branchId }));
-}
-
-function sliceForBranch(full: AppData, branchId: string): AppData {
-  const scoped = scopeData(full, branchId);
-  return {
-    ...scoped,
-    branches: full.branches.filter((b) => b.id === branchId),
-    users: full.users.filter((u) => u.branchId === branchId),
-  };
-}
-
-function incomingForBranch(incoming: AppData, branchId: string): AppData {
-  const hasTagged = SCOPED_KEYS.some((key) =>
-    (incoming[key] as Array<{ branchId?: string }> | undefined)?.some((r) => r?.branchId === branchId)
-  );
-  if (hasTagged) return sliceForBranch(incoming, branchId);
-  const users = (incoming.users || []).filter(
-    (u) => u.role !== "developer" && u.role !== "superadmin" && (!u.branchId || u.branchId === branchId)
-  );
-  const branches = (incoming.branches || []).filter((b) => b.id === branchId);
-  return {
-    ...incoming,
-    branches: branches.length ? branches : (incoming.branches || []).slice(0, 1),
-    users,
-  };
-}
-
-function mergeBranchRestore(full: AppData, incoming: AppData, branchId: string): AppData {
-  const slice = incomingForBranch(incoming, branchId);
-  const keepOthers = <T extends { branchId?: string }>(rows: T[]) => rows.filter((r) => r.branchId !== branchId);
-  const incomingBranch = (slice.branches || []).find((b) => b.id === branchId) || (slice.branches || [])[0];
-  const incomingUsers = (slice.users || [])
-    .filter((u) => u.role !== "developer" && u.role !== "superadmin")
-    .map((u) => ({ ...u, branchId }));
-
-  return {
-    ...full,
-    branches: incomingBranch
-      ? full.branches.map((b) => (b.id === branchId ? { ...incomingBranch, id: branchId } : b))
-      : full.branches,
-    users: [
-      ...full.users.filter((u) => u.role === "developer" || u.role === "superadmin" || u.branchId !== branchId),
-      ...incomingUsers,
-    ],
-    medicines: [...keepOthers(full.medicines), ...stampBranch(slice.medicines, branchId)],
-    patients: [...keepOthers(full.patients), ...stampBranch(slice.patients, branchId)],
-    doctors: [...keepOthers(full.doctors || []), ...stampBranch(slice.doctors || [], branchId)],
-    invoices: [...keepOthers(full.invoices), ...stampBranch(slice.invoices, branchId)],
-    suppliers: [...keepOthers(full.suppliers), ...stampBranch(slice.suppliers, branchId)],
-    grns: [...keepOthers(full.grns), ...stampBranch(slice.grns, branchId)],
-    returns: [...keepOthers(full.returns), ...stampBranch(slice.returns, branchId)],
-    audit: [...keepOthers(full.audit), ...stampBranch(slice.audit, branchId)],
-    counters: full.counters,
-  };
 }
 
 export function parseBranchBackup(raw: unknown): { data: AppData; branchId?: string; payment?: PaymentSettings; profile?: import("./types").StoreProfile } {
@@ -659,6 +597,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
       setDoc(doc(db, COLLECTIONS.meta, "app"), payload, { merge: true }).catch(() => {});
     }
+    fetch("/api/staff-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffPlan: tier, customLimits: activeCustom }),
+    }).catch(() => {});
   }, []);
 
   const setCustomStaffPlanLimits = useCallback((limits: StaffPlanLimits) => {
@@ -671,6 +614,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (db) {
       setDoc(doc(db, COLLECTIONS.meta, "app"), { customStaffPlanLimits: limits }, { merge: true }).catch(() => {});
     }
+    fetch("/api/staff-plan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ staffPlan: 5, customLimits: limits }),
+    }).catch(() => {});
   }, []);
 
   // Payment settings (UPI QR etc.) — synced through the meta doc
@@ -990,6 +938,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
     const maxEntries = flagsRef.current.auditRetentionLifetime ? 10000 : 2000;
     applyUpdate((prev) => ({ ...prev, audit: [entry, ...pruneAudit(prev.audit)].slice(0, maxEntries) }));
+    fetch("/api/audit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    }).catch(() => {});
   }, [applyUpdate, pruneAudit]);
 
   const login = useCallback((username: string, password: string) => {
@@ -1089,7 +1042,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     if (slicesRef.current.users) {
-      slicesRef.current.users = [newUser, ...slicesRef.current.users.filter((u) => u.id !== id)];
+      slicesRef.current.users = [newUser, ...(slicesRef.current.users as User[]).filter((u) => u.id !== id)];
     }
 
     setDataRaw((prev) => {
@@ -1138,7 +1091,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     };
 
     if (slicesRef.current.users) {
-      slicesRef.current.users = slicesRef.current.users.map((u) => (u.id === id ? updatedUser : u));
+      slicesRef.current.users = (slicesRef.current.users as User[]).map((u) => (u.id === id ? updatedUser : u));
     }
 
     setDataRaw((prev) => {
@@ -1190,7 +1143,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
 
     if (slicesRef.current.users) {
-      slicesRef.current.users = slicesRef.current.users.filter((u) => u.id !== id);
+      slicesRef.current.users = (slicesRef.current.users as User[]).filter((u) => u.id !== id);
     }
 
     setDataRaw((prev) => {

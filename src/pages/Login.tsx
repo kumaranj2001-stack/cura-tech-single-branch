@@ -3,7 +3,7 @@ import { useStore } from "../store/store";
 import { useTheme } from "../store/theme";
 import { Button, Input, Label, PasswordInput } from "../components/ui";
 import { sanitizeUsername, sanitizePassword } from "../utils/security";
-import { Activity, ShieldCheck, Network, UserRound, Lock, Loader2, Moon, Sun, ClipboardCheck } from "lucide-react";
+import { Activity, ShieldCheck, UserRound, Lock, Loader2, Moon, Sun, ClipboardCheck } from "lucide-react";
 import logoUrl from "../assets/logo.png";
 import Privacy from "./Privacy";
 

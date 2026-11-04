@@ -58,10 +58,20 @@ const Suppliers: React.FC = () => {
     if (edit) {
       setData((d) => ({ ...d, suppliers: d.suppliers.map((x) => (x.id === edit.id ? { ...x, ...clean } : x)) }));
       log("SUPPLIER_UPDATE", name);
+      fetch("/api/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: edit.id, ...clean }),
+      }).catch(() => {});
     } else {
       const ns: Supplier = { id: uid("s"), branchId: undefined, ...clean };
       setData((d) => ({ ...d, suppliers: [ns, ...d.suppliers] }));
       log("SUPPLIER_CREATE", name);
+      fetch("/api/suppliers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(ns),
+      }).catch(() => {});
     }
     setOpen(false);
   };
@@ -74,6 +84,7 @@ const Suppliers: React.FC = () => {
     if (!confirm(`Delete ${s.name}?`)) return;
     setData((d) => ({ ...d, suppliers: d.suppliers.filter((x) => x.id !== s.id) }));
     log("SUPPLIER_DELETE", s.name);
+    fetch(`/api/suppliers/${s.id}`, { method: "DELETE" }).catch(() => {});
   };
 
   return (
@@ -148,14 +159,14 @@ const Suppliers: React.FC = () => {
         <CardBody className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                 <tr><Th>Name</Th><Th>Contact</Th><Th>GST No.</Th><Th>DI No.</Th><Th>Address</Th><Th>Total Purchases</Th><Th></Th></tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50">
                 {data.suppliers.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50 transition-colors">
+                  <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <Td>
-                      <div className="font-medium">{s.name}</div>
+                      <div className="font-medium text-slate-800 dark:text-slate-100">{s.name}</div>
                       {s.email && <div className="text-xs text-slate-500">{s.email}</div>}
                     </Td>
                     <Td>{s.contact}</Td>
@@ -174,7 +185,7 @@ const Suppliers: React.FC = () => {
                       ) : <span className="text-slate-400">—</span>}
                     </Td>
                     <Td>{s.address || "—"}</Td>
-                    <Td className="font-semibold">{fmtCurrency(purchaseTotalForSupplier(s.id))}</Td>
+                    <Td className="font-semibold text-sky-700 dark:text-sky-400">{fmtCurrency(purchaseTotalForSupplier(s.id))}</Td>
                     <Td className="space-x-1">
                       <Button
                         size="sm"

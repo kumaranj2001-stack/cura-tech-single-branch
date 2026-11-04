@@ -133,7 +133,7 @@ function grnIntelligentParserPlugin(): Plugin {
               if (!validation.isValid) {
                 res.statusCode = 400;
                 res.setHeader("Content-Type", "application/json");
-                res.end(JSON.stringify({ success: false, isValid: false, errors: validation.errors, error: validation.message }));
+                res.end(JSON.stringify({ success: false, isValid: false, errors: validation.errors, error: (validation as any).message || validation.errors?.join(", ") }));
                 return;
               }
 
@@ -173,7 +173,7 @@ function grnIntelligentParserPlugin(): Plugin {
               const payload = JSON.parse(body || "{}");
               const { createMedicine } = await import("./server/medicineHandler.mjs");
               const { medicine, medicines = [], requirePurchaseDetails = true } = payload;
-              const result = createMedicine(medicine || payload, medicines, { requirePurchaseDetails });
+              const result: any = createMedicine(medicine || payload, medicines, { requirePurchaseDetails });
 
               try {
                 const { db, COLLECTIONS } = await import("./server/firebase.mjs");
@@ -219,7 +219,7 @@ function grnIntelligentParserPlugin(): Plugin {
               const id = payload.id || urlId;
               const role = payload.role || (req.headers["x-user-role"] as string) || "";
               const { patch, medicines = [] } = payload;
-              const result = updateMedicine(id, patch || payload, medicines, role);
+              const result: any = updateMedicine(id, patch || payload, medicines, role);
 
               try {
                 const { db, COLLECTIONS } = await import("./server/firebase.mjs");
@@ -296,7 +296,7 @@ function grnIntelligentParserPlugin(): Plugin {
               const medicines = payload.medicines || [];
 
               const { updateMedicineMinStock } = await import("./server/medicineHandler.mjs");
-              const result = updateMedicineMinStock(id, minStock, role, medicines);
+              const result: any = updateMedicineMinStock(id, minStock, role, medicines);
 
               try {
                 const { db, COLLECTIONS } = await import("./server/firebase.mjs");
@@ -504,13 +504,13 @@ function grnIntelligentParserPlugin(): Plugin {
               const payload = JSON.parse(body || "{}");
               const { createDoctor } = await import("./server/doctorHandler.mjs");
               const { doctor, doctors = [] } = payload;
-              const result = createDoctor(doctor || payload, doctors);
+              const result: any = createDoctor(doctor || payload, doctors);
 
               try {
                 const { db, COLLECTIONS } = await import("./server/firebase.mjs");
                 const { doc, setDoc } = await import("firebase/firestore");
-                const cleanData = {};
-                for (const [k, v] of Object.entries(result.doctor)) {
+                const cleanData: Record<string, unknown> = {};
+                for (const [k, v] of Object.entries(result.doctor as Record<string, unknown>)) {
                   if (v !== undefined) cleanData[k] = v;
                 }
                 await setDoc(doc(db, COLLECTIONS.doctors, result.doctor.id), cleanData);
@@ -542,13 +542,13 @@ function grnIntelligentParserPlugin(): Plugin {
                 : null;
               const id = payload.id || urlId;
               const { patch, doctors = [] } = payload;
-              const result = updateDoctor(id, patch || payload, doctors);
+              const result: any = updateDoctor(id, patch || payload, doctors);
 
               try {
                 const { db, COLLECTIONS } = await import("./server/firebase.mjs");
                 const { doc, setDoc } = await import("firebase/firestore");
-                const cleanData = {};
-                for (const [k, v] of Object.entries(result.doctor)) {
+                const cleanData: Record<string, unknown> = {};
+                for (const [k, v] of Object.entries(result.doctor as Record<string, unknown>)) {
                   if (v !== undefined) cleanData[k] = v;
                 }
                 await setDoc(doc(db, COLLECTIONS.doctors, result.doctor.id), cleanData, { merge: true });
@@ -609,6 +609,14 @@ function grnIntelligentParserPlugin(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), viteSingleFile(), grnIntelligentParserPlugin()],
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "src"),

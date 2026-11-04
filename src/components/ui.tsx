@@ -120,15 +120,16 @@ export const Label: React.FC<React.LabelHTMLAttributes<HTMLLabelElement>> = ({ c
   <label className={cn("block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1", className)} {...p} />
 );
 
-export const Badge: React.FC<{ children: React.ReactNode; tone?: "green" | "red" | "amber" | "blue" | "slate" }> = ({ children, tone = "slate" }) => {
+export const Badge: React.FC<{ children: React.ReactNode; tone?: "green" | "red" | "amber" | "blue" | "slate" | "purple"; title?: string; className?: string }> = ({ children, tone = "slate", title, className }) => {
   const tones = {
     green: "bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700",
     red: "bg-rose-50 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-700",
     amber: "bg-amber-50 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-700",
     blue: "bg-sky-50 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-700",
     slate: "bg-slate-50 dark:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600",
+    purple: "bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-700",
   }[tone];
-  return <span className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", tones)}>{children}</span>;
+  return <span title={title} className={cn("inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border", tones, className)}>{children}</span>;
 };
 
 export const Modal: React.FC<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode; size?: "sm" | "md" | "lg" | "xl" }> = ({ open, onClose, title, children, size = "md" }) => {

@@ -102,10 +102,20 @@ const Patients: React.FC = () => {
     if (edit) {
       setData((d) => ({ ...d, patients: d.patients.map((p) => (p.id === edit.id ? { ...p, ...clean } : p)) }));
       log("PATIENT_UPDATE", name);
+      fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: edit.id, ...clean }),
+      }).catch(() => {});
     } else {
       const np: Patient = { id: uid("p"), createdAt: new Date().toISOString(), ...clean };
       setData((d) => ({ ...d, patients: [np, ...d.patients] }));
       log("PATIENT_CREATE", name);
+      fetch("/api/patients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(np),
+      }).catch(() => {});
     }
     setOpen(false);
   };
@@ -114,6 +124,7 @@ const Patients: React.FC = () => {
     if (!confirm(`Delete patient ${p.name}?`)) return;
     setData((d) => ({ ...d, patients: d.patients.filter((x) => x.id !== p.id) }));
     log("PATIENT_DELETE", p.name);
+    fetch(`/api/patients/${p.id}`, { method: "DELETE" }).catch(() => {});
   };
 
   const history = (pid: string) => data.invoices.filter((i) => i.patientId === pid);

@@ -32,14 +32,11 @@ const Billing: React.FC = () => {
   const [doctorId, setDoctorId] = useState<string | undefined>();
   const [doctorName, setDoctorName] = useState("");
   const [doctorHospital, setDoctorHospital] = useState("");
-  const [doctorAddress, setDoctorAddress] = useState("");
   const [doctorPhone, setDoctorPhone] = useState("");
   const [doctorQuery, setDoctorQuery] = useState("");
   const [doctorMenuOpen, setDoctorMenuOpen] = useState(false);
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [ndForm, setNdForm] = useState({ name: "", hospital: "", hospitalAddress: "", phone: "" });
-
-  const today = new Date().toISOString().slice(0, 10);
 
   /* Narcotic & Prescription document state (unlimited upload size) */
   const [rxUrl, setRxUrl] = useState("");
@@ -222,7 +219,6 @@ const Billing: React.FC = () => {
     setDoctorId(d.id);
     setDoctorName(d.name);
     setDoctorHospital(d.hospital);
-    setDoctorAddress(d.hospitalAddress || "");
     setDoctorPhone(d.phone);
     setDoctorQuery("");
     setDoctorMenuOpen(false);
@@ -232,7 +228,6 @@ const Billing: React.FC = () => {
     setDoctorId(undefined);
     setDoctorName("");
     setDoctorHospital("");
-    setDoctorAddress("");
     setDoctorPhone("");
     setDoctorQuery("");
   };
@@ -333,7 +328,7 @@ const Billing: React.FC = () => {
       return;
     }
     if (availablePaymentMethods.length > 0 && !availablePaymentMethods.some((m) => m.id === payMethod)) {
-      setPayMethod(availablePaymentMethods[0].id);
+      setPayMethod(availablePaymentMethods[0].id as "cash" | "card" | "upi");
     }
   }, [flags.paymentsMaster, availablePaymentMethods, payMethod]);
 
@@ -529,6 +524,11 @@ const Billing: React.FC = () => {
       };
     });
     log("BILLING_CREATE", `Invoice ${inv.number} for ${patientName} — ${fmtCurrency(inv.total)}${hasNarcotic ? " (Narcotic prescription verified)" : ""}`);
+    fetch("/api/invoices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(inv),
+    }).catch(() => {});
     setPrintInv(inv);
     setItems([]);
     setPatientName("");

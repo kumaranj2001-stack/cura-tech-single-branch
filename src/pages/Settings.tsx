@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useStore } from "../store/store";
 import { useTheme } from "../store/theme";
-import { Card, CardBody, Button, Label, Input, Select, Modal, Textarea } from "../components/ui";
+import { Card, CardBody, Button, Label, Input, Modal, Textarea } from "../components/ui";
 import { downloadJSON, flashToast, compressImageFile } from "../utils/helpers";
 import type { FeatureFlags, StaffPlanLimits } from "../store/types";
 import { isOverseer, STAFF_PLAN_OPTIONS, formatPlanCap, staffPlanLimits, DEFAULT_CUSTOM_STAFF_LIMITS } from "../store/types";
@@ -1017,7 +1017,7 @@ const Settings: React.FC = () => {
                         className="rounded-xl border border-slate-200/90 dark:border-slate-700/80 bg-white/70 dark:bg-slate-800/60 p-2.5 space-y-2"
                       >
                         <Toggle
-                          on={flags[it.key]}
+                          on={flags[it.key] !== false}
                           label={it.label}
                           hint={it.hint}
                           onChange={(v) => {

@@ -7,7 +7,7 @@ import { fmtCurrency, fmtDate, downloadPDF, isExpired, daysToExpiry } from "../u
 type ReportType = "daily" | "monthly" | "purchases" | "stock" | "expiry" | "pl" | "tax" | "user" | "userSales";
 
 const Reports: React.FC = () => {
-  const { data, currentUser, currentBranch, flags, storeProfile } = useStore();
+  const { data, currentBranch, flags, storeProfile } = useStore();
   const [type, setType] = useState<ReportType>("daily");
 
   const reportEnabled: Record<ReportType, boolean> = {
@@ -254,51 +254,57 @@ const Reports: React.FC = () => {
             <p className="text-sm text-slate-500 mb-4 capitalize">{type.replace(/-/g, " ")} report {from && `from ${from}`} {to && `to ${to}`}</p>
 
             {(type === "daily" || type === "monthly") && (
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>Period</Th><Th>Invoices</Th><Th>Tax</Th><Th>Total</Th></tr></thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(result as { date: string; count: number; tax: number; total: number }[]).map((r) => (
-                    <tr key={r.date}><Td>{r.date}</Td><Td>{r.count}</Td><Td>{fmtCurrency(r.tax)}</Td><Td className="font-semibold">{fmtCurrency(r.total)}</Td></tr>
-                  ))}
-                  {result.length === 0 && (
-                    <tr><td colSpan={4} className="text-center py-8 text-slate-400">No sales records found</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>Period</Th><Th>Invoices</Th><Th>Tax</Th><Th>Total</Th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(result as { date: string; count: number; tax: number; total: number }[]).map((r) => (
+                      <tr key={r.date}><Td>{r.date}</Td><Td>{r.count}</Td><Td>{fmtCurrency(r.tax)}</Td><Td className="font-semibold">{fmtCurrency(r.total)}</Td></tr>
+                    ))}
+                    {(result as unknown as any[]).length === 0 && (
+                      <tr><td colSpan={4} className="text-center py-8 text-slate-400">No sales records found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {type === "purchases" && (
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>GRN</Th><Th>Date</Th><Th>Supplier</Th><Th>Items</Th><Th>Total</Th></tr></thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(result as { id: string; number: string; date: string; supplierName: string; items: unknown[]; total: number }[]).map((g) => (
-                    <tr key={g.id}><Td>{g.number}</Td><Td>{fmtDate(g.date)}</Td><Td>{g.supplierName}</Td><Td>{g.items.length}</Td><Td className="font-semibold">{fmtCurrency(g.total)}</Td></tr>
-                  ))}
-                  {result.length === 0 && (
-                    <tr><td colSpan={5} className="text-center py-8 text-slate-400">No purchase records found</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>GRN</Th><Th>Date</Th><Th>Supplier</Th><Th>Items</Th><Th>Total</Th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(result as { id: string; number: string; date: string; supplierName: string; items: unknown[]; total: number }[]).map((g) => (
+                      <tr key={g.id}><Td>{g.number}</Td><Td>{fmtDate(g.date)}</Td><Td>{g.supplierName}</Td><Td>{g.items.length}</Td><Td className="font-semibold">{fmtCurrency(g.total)}</Td></tr>
+                    ))}
+                    {(result as unknown as any[]).length === 0 && (
+                      <tr><td colSpan={5} className="text-center py-8 text-slate-400">No purchase records found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {(type === "stock" || type === "expiry") && (
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>Name</Th><Th>Batch</Th><Th>Stock</Th><Th>Buy</Th><Th>Sell</Th><Th>Expiry</Th><Th>Status</Th></tr></thead>
-                <tbody className="divide-y divide-slate-100">
-                  {(result as { id: string; name: string; batch: string; stock: number; purchasePrice: number; sellingPrice: number; expiry: string }[]).map((m) => {
-                    const exp = isExpired(m.expiry);
-                    const dte = daysToExpiry(m.expiry);
-                    return (
-                      <tr key={m.id}><Td>{m.name}</Td><Td>{m.batch}</Td><Td>{m.stock}</Td><Td>{fmtCurrency(m.purchasePrice)}</Td><Td>{fmtCurrency(m.sellingPrice)}</Td><Td>{m.expiry}</Td>
-                        <Td>{exp ? <Badge tone="red">EXPIRED</Badge> : dte <= 90 ? <Badge tone="amber">{dte}d</Badge> : <Badge tone="green">OK</Badge>}</Td>
-                      </tr>
-                    );
-                  })}
-                  {result.length === 0 && (
-                    <tr><td colSpan={7} className="text-center py-8 text-slate-400">No inventory records found</td></tr>
-                  )}
-                </tbody>
-              </table>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                <table className="w-full">
+                  <thead className="bg-slate-50 border-b border-slate-200"><tr><Th>Name</Th><Th>Batch</Th><Th>Stock</Th><Th>Buy</Th><Th>Sell</Th><Th>Expiry</Th><Th>Status</Th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {(result as { id: string; name: string; batch: string; stock: number; purchasePrice: number; sellingPrice: number; expiry: string }[]).map((m) => {
+                      const exp = isExpired(m.expiry);
+                      const dte = daysToExpiry(m.expiry);
+                      return (
+                        <tr key={m.id}><Td>{m.name}</Td><Td>{m.batch}</Td><Td>{m.stock}</Td><Td>{fmtCurrency(m.purchasePrice)}</Td><Td>{fmtCurrency(m.sellingPrice)}</Td><Td>{m.expiry}</Td>
+                          <Td>{exp ? <Badge tone="red">EXPIRED</Badge> : dte <= 90 ? <Badge tone="amber">{dte}d</Badge> : <Badge tone="green">OK</Badge>}</Td>
+                        </tr>
+                      );
+                    })}
+                    {(result as unknown as any[]).length === 0 && (
+                      <tr><td colSpan={7} className="text-center py-8 text-slate-400">No inventory records found</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             )}
 
             {type === "pl" && (() => {
@@ -344,44 +350,46 @@ const Reports: React.FC = () => {
                       <div className="text-2xl font-bold text-violet-700 dark:text-violet-300 tabular-nums">{top ? fmtCurrency(top.sales) : fmtCurrency(0)}</div>
                     </div>
                   </div>
-                  <table className="w-full">
-                    <thead className="bg-slate-50 dark:bg-slate-700/40 border-b border-slate-200 dark:border-slate-600">
-                      <tr><Th>User</Th><Th>Invoices</Th><Th>Sales Amount</Th><Th>Tax Collected</Th><Th>Total Actions</Th></tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                      {rows.map((u, i) => (
-                        <tr key={u.user} className={i === 0 && u.sales > 0 ? "bg-emerald-50/50 dark:bg-emerald-900/10" : undefined}>
-                          <Td className="font-medium">
-                            <span className="inline-flex items-center gap-2">
-                              <span className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 flex items-center justify-center text-xs font-bold shrink-0">
-                                {u.user.charAt(0).toUpperCase()}
+                  <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 dark:bg-slate-700/40 border-b border-slate-200 dark:border-slate-600">
+                        <tr><Th>User</Th><Th>Invoices</Th><Th>Sales Amount</Th><Th>Tax Collected</Th><Th>Total Actions</Th></tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {rows.map((u, i) => (
+                          <tr key={u.user} className={i === 0 && u.sales > 0 ? "bg-emerald-50/50 dark:bg-emerald-900/10" : undefined}>
+                            <Td className="font-medium">
+                              <span className="inline-flex items-center gap-2">
+                                <span className="w-7 h-7 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 flex items-center justify-center text-xs font-bold shrink-0">
+                                  {u.user.charAt(0).toUpperCase()}
+                                </span>
+                                {u.user}
+                                {i === 0 && u.sales > 0 && <Badge tone="green">TOP</Badge>}
                               </span>
-                              {u.user}
-                              {i === 0 && u.sales > 0 && <Badge tone="green">TOP</Badge>}
-                            </span>
-                          </Td>
-                          <Td className="tabular-nums">{u.invoices}</Td>
-                          <Td className="font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">{fmtCurrency(u.sales)}</Td>
-                          <Td className="tabular-nums">{fmtCurrency(u.tax)}</Td>
-                          <Td className="tabular-nums">{u.actions}</Td>
-                        </tr>
-                      ))}
-                      {rows.length === 0 && (
-                        <tr><Td colSpan={5}><div className="text-center text-slate-400 py-6">No activity in this range.</div></Td></tr>
+                            </Td>
+                            <Td className="tabular-nums">{u.invoices}</Td>
+                            <Td className="font-semibold text-emerald-700 dark:text-emerald-300 tabular-nums">{fmtCurrency(u.sales)}</Td>
+                            <Td className="tabular-nums">{fmtCurrency(u.tax)}</Td>
+                            <Td className="tabular-nums">{u.actions}</Td>
+                          </tr>
+                        ))}
+                        {rows.length === 0 && (
+                          <tr><Td colSpan={5}><div className="text-center text-slate-400 py-6">No activity in this range.</div></Td></tr>
+                        )}
+                      </tbody>
+                      {rows.length > 0 && (
+                        <tfoot className="border-t-2 border-slate-200 dark:border-slate-600">
+                          <tr className="bg-slate-50 dark:bg-slate-700/40 font-bold">
+                            <Td>Total</Td>
+                            <Td className="tabular-nums">{totInv}</Td>
+                            <Td className="text-emerald-700 dark:text-emerald-300 tabular-nums">{fmtCurrency(totSales)}</Td>
+                            <Td className="tabular-nums">{fmtCurrency(rows.reduce((s, u) => s + u.tax, 0))}</Td>
+                            <Td className="tabular-nums">{totAct}</Td>
+                          </tr>
+                        </tfoot>
                       )}
-                    </tbody>
-                    {rows.length > 0 && (
-                      <tfoot className="border-t-2 border-slate-200 dark:border-slate-600">
-                        <tr className="bg-slate-50 dark:bg-slate-700/40 font-bold">
-                          <Td>Total</Td>
-                          <Td className="tabular-nums">{totInv}</Td>
-                          <Td className="text-emerald-700 dark:text-emerald-300 tabular-nums">{fmtCurrency(totSales)}</Td>
-                          <Td className="tabular-nums">{fmtCurrency(rows.reduce((s, u) => s + u.tax, 0))}</Td>
-                          <Td className="tabular-nums">{totAct}</Td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
+                    </table>
+                  </div>
                 </div>
               );
             })()}

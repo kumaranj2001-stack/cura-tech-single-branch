@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { useStore } from "../store/store";
 import { Card, CardBody, Button, Th, Td, Badge, EmptyState, Modal, Input, Label, Select } from "../components/ui";
 import { fmtCurrency, fmtDate, flashToast } from "../utils/helpers";
-import type { GRN as GRNType, Medicine, PurchaseItem } from "../store/types";
+import type { GRN as GRNType, PurchaseItem } from "../store/types";
 import { isOverseer } from "../store/types";
 import { Pencil, Trash2, Search, Plus, AlertTriangle, ShieldCheck, CheckCircle2, RotateCcw } from "lucide-react";
 
@@ -217,6 +217,11 @@ export const ApprovedGrn: React.FC = () => {
     });
 
     log("APPROVED_GRN_EDIT", `Developer edited Approved GRN ${updatedGrn.number} (${fmtCurrency(updatedGrn.total)})`);
+    fetch(`/api/grn/approved/${updatedGrn.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", "x-user-role": currentUser?.role || "" },
+      body: JSON.stringify({ grn: updatedGrn, adjustStock: adjustStockOnEdit }),
+    }).catch(() => {});
     flashToast(`Approved GRN ${updatedGrn.number} updated successfully`);
     setEditDraft(null);
     if (viewGrn?.id === updatedGrn.id) {
@@ -258,6 +263,11 @@ export const ApprovedGrn: React.FC = () => {
         reverseStockOnDelete ? " with inventory stock reversal" : " without stock adjustment"
       }`
     );
+    fetch(`/api/grn/approved/${deleteTarget.id}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json", "x-user-role": currentUser?.role || "" },
+      body: JSON.stringify({ reverseStock: reverseStockOnDelete }),
+    }).catch(() => {});
     flashToast(`Approved GRN ${deleteTarget.number} deleted`);
     setDeleteTarget(null);
     if (viewGrn?.id === deleteTarget.id) {

@@ -57,8 +57,8 @@ const SalesReturn: React.FC = () => {
       <Card>
         <CardBody className="flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center">
           <div>
-            <div className="font-semibold text-slate-800">Sales Returns</div>
-            <div className="text-xs text-slate-500">Record medicines returned by customers. Stock will be added back automatically.</div>
+            <div className="font-semibold text-slate-800 dark:text-slate-100">Sales Returns</div>
+            <div className="text-xs text-slate-500 dark:text-slate-400">Record medicines returned by customers. Stock will be added back automatically.</div>
           </div>
           <Button onClick={() => setOpen(true)}>+ New Sales Return</Button>
         </CardBody>

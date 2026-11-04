@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from "react";
 import { useStore, uid } from "../store/store";
 import {
-  PackagePlus, Trash2, Save, RotateCcw, Search, Plus, Minus, ReceiptText, Layers, Percent, IndianRupee,
-  Upload, FileSpreadsheet, FileText, Loader2, Sparkles, Pencil, CheckCircle2, Eye, X, AlertCircle,
+  PackagePlus, Trash2, Save, RotateCcw, Search, Plus, Minus, Layers,
+  FileSpreadsheet, FileText, Loader2, Sparkles, Pencil, CheckCircle2, Eye, X, AlertCircle,
 } from "lucide-react";
 import { Card, CardBody, Button, Input, Label, Select, Modal, Badge } from "../components/ui";
-import { flashToast, fmtCurrency } from "../utils/helpers";
+import { flashToast } from "../utils/helpers";
 import { parseSupplierInvoice, type ExtractedGrnInvoice, type ExtractedGrnItem } from "../services/aiDocumentParser";
 import { validateBatchNumber } from "../utils/batchValidation";
 import type { GRN, PurchaseItem, GrnAdjustment, Medicine } from "../store/types";
 
 /* ── formatting ── */
-const n2 = (x: number) => (Number.isFinite(x) ? x : 0).toFixed(2);
-const n3 = (x: number) => (Number.isFinite(x) ? x : 0).toFixed(3);
+const n2 = (x: number | "" | undefined | null) => (typeof x === "number" && Number.isFinite(x) ? x : 0).toFixed(2);
+const n3 = (x: number | "" | undefined | null) => (typeof x === "number" && Number.isFinite(x) ? x : 0).toFixed(3);
 const cur = (x: number) => "₹" + n2(x);
 
 /* ── line calculation engine (exact spec formulas) ── */
@@ -423,7 +423,6 @@ const Purchases: React.FC = () => {
       const rQty = Number(l.receivingQty) || 0;
       const uom = Number(l.uomPerStrip) || 1;
       const fQty = Number(l.freeQty) || 0;
-      const pPrice = Number(l.purchasePrice) || 0;
       const mrp = Number(l.mrpUnit) || 0;
       const disc = Number(l.discPct) || 0;
       const extra = Number(l.extraCharges) || 0;
@@ -514,7 +513,6 @@ const Purchases: React.FC = () => {
   /* adjustment modal helpers */
   const [adjDesc, setAdjDesc] = useState("");
   const [adjAmt, setAdjAmt] = useState<number | "">("");
-  const adjRows = adjModal === "ded" ? deductions : additions;
   const setAdjRows = adjModal === "ded" ? setDeductions : setAdditions;
   const addAdj = () => {
     if (!adjDesc.trim() || Number(adjAmt) <= 0) return;

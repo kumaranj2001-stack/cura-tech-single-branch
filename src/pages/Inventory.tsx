@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useStore, uid } from "../store/store";
-import { FileDown, Minus, Plus } from "lucide-react";
+import { FileDown, Minus, Plus, Pencil } from "lucide-react";
 import { Card, CardBody, Input, Label, Button, Th, Td, Modal, Badge, EmptyState, Select } from "../components/ui";
 import { fmtCurrency, isExpired, daysToExpiry, downloadPDF, flashToast } from "../utils/helpers";
 import type { Medicine } from "../store/types";
@@ -532,6 +532,7 @@ const Inventory: React.FC<InventoryProps> = ({ initialFilter, onConsumeFilter })
                   <Th>GST</Th>
                   <Th>Expiry</Th>
                   <Th>Status</Th>
+                  <Th className="text-right">Actions</Th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -564,6 +565,17 @@ const Inventory: React.FC<InventoryProps> = ({ initialFilter, onConsumeFilter })
                         {exp ? <Badge tone="red">EXPIRED</Badge> : dte <= 90 ? <Badge tone="amber">{dte}d</Badge> : <Badge tone="green">OK</Badge>}
                         {m.stock === 0 && <Badge tone="red">OUT</Badge>}
                         {m.stock > 0 && m.stock <= minStockOf(m) && <Badge tone="amber">LOW</Badge>}
+                      </Td>
+                      <Td className="text-right">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(m)}
+                          className="p-1.5 text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer inline-flex items-center justify-center"
+                          title="Edit Medicine"
+                          aria-label={`Edit ${m.name}`}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
                       </Td>
                     </tr>
                   );
