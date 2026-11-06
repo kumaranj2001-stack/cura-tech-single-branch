@@ -288,11 +288,39 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // Inventory Medicine List Endpoint
-  if (req.method === "GET" && (url.pathname === "/api/inventory/medicines" || url.pathname === "/api/medicines")) {
+  // Inventory Medicine List & Search Indexing Endpoint
+  if (req.method === "GET" && (url.pathname === "/api/inventory/medicines" || url.pathname === "/api/medicines" || url.pathname === "/api/inventory/search")) {
     try {
       const snap = await getDocs(collection(db, COLLECTIONS.medicines));
-      const firestoreDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      let firestoreDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+      // Check cloud cutoff if any
+      try {
+        const metaSnap = await getDoc(doc(db, COLLECTIONS.meta, "app"));
+        const cutoff = metaSnap.exists() ? metaSnap.data()?.medicinesClearedAt : null;
+        if (cutoff) {
+          firestoreDocs = firestoreDocs.filter((m) => Boolean(m.createdAt && m.createdAt > cutoff));
+        }
+      } catch {}
+
+      const q = (url.searchParams.get("q") || "").trim().toLowerCase();
+      if (q) {
+        firestoreDocs = firestoreDocs.filter((m) =>
+          (m.name && String(m.name).toLowerCase().includes(q)) ||
+          (m.batch && String(m.batch).toLowerCase().includes(q)) ||
+          (m.supplier && String(m.supplier).toLowerCase().includes(q))
+        );
+      }
+
+      const sup = (url.searchParams.get("supplier") || "").trim().toLowerCase();
+      if (sup) {
+        firestoreDocs = firestoreDocs.filter((m) =>
+          m.supplier && String(m.supplier).toLowerCase().includes(sup)
+        );
+      }
+
+      firestoreDocs.sort((a, b) => String(a.name || "").localeCompare(String(b.name || "")));
+
       return sendJson(res, 200, {
         success: true,
         source: "firestore",
