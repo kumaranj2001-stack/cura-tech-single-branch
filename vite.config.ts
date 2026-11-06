@@ -218,12 +218,33 @@ function grnIntelligentParserPlugin(): Plugin {
               const urlId = url.pathname.includes("/update") ? null : pathParts[pathParts.length - 1];
               const id = payload.id || urlId;
               const role = payload.role || (req.headers["x-user-role"] as string) || "";
-              const { patch, medicines = [] } = payload;
+              let { patch, medicines = [] } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, setDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(medicines) || medicines.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.medicines));
+                  medicines = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!medicines.some((m: any) => m && m.id === id)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.medicines, id));
+                  if (docSnap.exists()) {
+                    medicines.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
               const result: any = updateMedicine(id, patch || payload, medicines, role);
 
               try {
-                const { db, COLLECTIONS } = await import("./server/firebase.mjs");
-                const { doc, setDoc } = await import("firebase/firestore");
                 const cleanData: Record<string, unknown> = {};
                 for (const [k, v] of Object.entries(result.medicine)) {
                   if (v !== undefined) cleanData[k] = v;
@@ -258,12 +279,33 @@ function grnIntelligentParserPlugin(): Plugin {
               const pathParts = url.pathname.split("/");
               const urlId = url.pathname.includes("/delete") ? null : pathParts[pathParts.length - 1];
               const id = payload.id || urlId;
-              const { medicines = [] } = payload;
+              let { medicines = [] } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, deleteDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(medicines) || medicines.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.medicines));
+                  medicines = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!medicines.some((m: any) => m && m.id === id)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.medicines, id));
+                  if (docSnap.exists()) {
+                    medicines.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
               const result = deleteMedicine(id, medicines);
 
               try {
-                const { db, COLLECTIONS } = await import("./server/firebase.mjs");
-                const { doc, deleteDoc } = await import("firebase/firestore");
                 await deleteDoc(doc(db, COLLECTIONS.medicines, id));
               } catch (dbErr) {
                 console.warn("[Vite medicine Firestore delete warning]", (dbErr as Error).message);
@@ -293,14 +335,34 @@ function grnIntelligentParserPlugin(): Plugin {
               const id = payload.id || pathParts[pathParts.length - 2];
               const role = payload.role || (req.headers["x-user-role"] as string) || "";
               const minStock = payload.minStock;
-              const medicines = payload.medicines || [];
+              let medicines = payload.medicines || [];
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, setDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(medicines) || medicines.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.medicines));
+                  medicines = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!medicines.some((m: any) => m && m.id === id)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.medicines, id));
+                  if (docSnap.exists()) {
+                    medicines.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
 
               const { updateMedicineMinStock } = await import("./server/medicineHandler.mjs");
               const result: any = updateMedicineMinStock(id, minStock, role, medicines);
 
               try {
-                const { db, COLLECTIONS } = await import("./server/firebase.mjs");
-                const { doc, setDoc } = await import("firebase/firestore");
                 await setDoc(doc(db, COLLECTIONS.medicines, id), { minStock: result.medicine.minStock }, { merge: true });
               } catch (dbErr) {
                 console.warn("[Vite minStock Firestore update warning]", (dbErr as Error).message);
@@ -406,7 +468,19 @@ function grnIntelligentParserPlugin(): Plugin {
               const payload = JSON.parse(body || "{}");
               const { listApprovedGrns } = await import("./server/approvedGrnHandler.mjs");
               const role = payload.role || (req.headers["x-user-role"] as string) || "";
-              const { grns = [], search = "", startDate, endDate } = payload;
+              let { grns = [], search = "", startDate, endDate } = payload;
+
+              if (!Array.isArray(grns) || grns.length === 0) {
+                try {
+                  const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+                  const { getDocs, collection } = await import("firebase/firestore");
+                  const snap = await getDocs(collection(db, COLLECTIONS.grns));
+                  grns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+
               const filtered = listApprovedGrns(grns, { search, startDate, endDate }, role);
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify({ success: true, count: filtered.length, grns: filtered }));
@@ -429,10 +503,69 @@ function grnIntelligentParserPlugin(): Plugin {
               const urlId = url.pathname.startsWith("/api/grn/approved/") && url.pathname !== "/api/grn/approved/update"
                 ? url.pathname.replace("/api/grn/approved/", "")
                 : null;
-              const grnId = payload.grnId || urlId;
+              const grnId = payload.grnId || (payload.grn && payload.grn.id) || urlId;
               const role = payload.role || (req.headers["x-user-role"] as string) || "";
-              const { patchData, grns = [], medicines = [], adjustStock = true } = payload;
-              const result = updateApprovedGrn(grnId, patchData || payload, grns, medicines, role, adjustStock);
+              const patchData = payload.grn || payload.patchData || payload;
+              let { grns = [], medicines = [], adjustStock = true } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, setDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(grns) || grns.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.grns));
+                  grns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!grns.some((g: any) => g && g.id === grnId)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.grns, grnId));
+                  if (docSnap.exists()) {
+                    grns.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
+              if (!Array.isArray(medicines) || medicines.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.medicines));
+                  medicines = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+
+              const result: any = updateApprovedGrn(grnId, patchData, grns, medicines, role, adjustStock);
+
+              // Persist updated GRN to Firestore gp_grns
+              try {
+                const grnDocData: Record<string, unknown> = {};
+                for (const [k, v] of Object.entries(result.updatedGrn as Record<string, unknown>)) {
+                  if (v !== undefined) grnDocData[k] = v;
+                }
+                await setDoc(doc(db, COLLECTIONS.grns, result.updatedGrn.id), grnDocData, { merge: true });
+              } catch (dbErr) {
+                console.warn("[Vite approved GRN update warning]", (dbErr as Error).message);
+              }
+
+              // Persist modified medicine stock levels to Firestore gp_medicines
+              if (adjustStock && result.medicines && Array.isArray(result.medicines)) {
+                try {
+                  for (const med of result.medicines) {
+                    const orig = medicines.find((m: any) => m && m.id === med.id);
+                    if (orig && orig.stock !== med.stock) {
+                      await setDoc(doc(db, COLLECTIONS.medicines, med.id), { stock: med.stock, updatedAt: new Date().toISOString() }, { merge: true });
+                    }
+                  }
+                } catch (dbErr) {
+                  console.warn("[Vite approved GRN stock adjustment warning]", (dbErr as Error).message);
+                }
+              }
+
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
             } catch (err) {
@@ -456,8 +589,62 @@ function grnIntelligentParserPlugin(): Plugin {
                 : null;
               const grnId = payload.grnId || urlId;
               const role = payload.role || (req.headers["x-user-role"] as string) || url.searchParams.get("role") || "";
-              const { grns = [], medicines = [], reverseStock = true } = payload;
-              const result = deleteApprovedGrn(grnId, grns, medicines, role, reverseStock);
+              let { grns = [], medicines = [], reverseStock = true } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, deleteDoc, setDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(grns) || grns.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.grns));
+                  grns = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!grns.some((g: any) => g && g.id === grnId)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.grns, grnId));
+                  if (docSnap.exists()) {
+                    grns.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
+              if (!Array.isArray(medicines) || medicines.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.medicines));
+                  medicines = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+
+              const result: any = deleteApprovedGrn(grnId, grns, medicines, role, reverseStock);
+
+              // Delete from Firestore gp_grns
+              try {
+                await deleteDoc(doc(db, COLLECTIONS.grns, grnId));
+              } catch (dbErr) {
+                console.warn("[Vite approved GRN delete warning]", (dbErr as Error).message);
+              }
+
+              // Persist reversed medicine stock levels to Firestore gp_medicines
+              if (reverseStock && result.medicines && Array.isArray(result.medicines)) {
+                try {
+                  for (const med of result.medicines) {
+                    const orig = medicines.find((m: any) => m && m.id === med.id);
+                    if (orig && orig.stock !== med.stock) {
+                      await setDoc(doc(db, COLLECTIONS.medicines, med.id), { stock: med.stock, updatedAt: new Date().toISOString() }, { merge: true });
+                    }
+                  }
+                } catch (dbErr) {
+                  console.warn("[Vite approved GRN stock reversal warning]", (dbErr as Error).message);
+                }
+              }
+
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify(result));
             } catch (err) {
@@ -471,8 +658,20 @@ function grnIntelligentParserPlugin(): Plugin {
 
         // Doctor management middleware
         if (url.pathname === "/api/doctors" && req.method === "GET") {
-          res.setHeader("Content-Type", "application/json");
-          res.end(JSON.stringify({ success: true, doctors: [] }));
+          const q = url.searchParams.get("q") || url.searchParams.get("search") || "";
+          try {
+            const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+            const { getDocs, collection } = await import("firebase/firestore");
+            const { listDoctors } = await import("./server/doctorHandler.mjs");
+            const snap = await getDocs(collection(db, COLLECTIONS.doctors));
+            const firestoreDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+            const result = listDoctors(firestoreDocs, { q });
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ success: true, count: result.length, doctors: result }));
+          } catch {
+            res.setHeader("Content-Type", "application/json");
+            res.end(JSON.stringify({ success: true, count: 0, doctors: [] }));
+          }
           return;
         }
 
@@ -483,7 +682,17 @@ function grnIntelligentParserPlugin(): Plugin {
             try {
               const payload = JSON.parse(body || "{}");
               const { listDoctors } = await import("./server/doctorHandler.mjs");
-              const { doctors = [], q = "", search = "" } = payload;
+              let { doctors = [], q = "", search = "" } = payload;
+              if (!Array.isArray(doctors) || doctors.length === 0) {
+                try {
+                  const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+                  const { getDocs, collection } = await import("firebase/firestore");
+                  const snap = await getDocs(collection(db, COLLECTIONS.doctors));
+                  doctors = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
               const result = listDoctors(doctors, { q: q || search });
               res.setHeader("Content-Type", "application/json");
               res.end(JSON.stringify({ success: true, count: result.length, doctors: result }));
@@ -541,12 +750,33 @@ function grnIntelligentParserPlugin(): Plugin {
                 ? url.pathname.replace("/api/doctors/", "")
                 : null;
               const id = payload.id || urlId;
-              const { patch, doctors = [] } = payload;
+              let { patch, doctors = [] } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, setDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(doctors) || doctors.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.doctors));
+                  doctors = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!doctors.some((d: any) => d && d.id === id)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.doctors, id));
+                  if (docSnap.exists()) {
+                    doctors.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
               const result: any = updateDoctor(id, patch || payload, doctors);
 
               try {
-                const { db, COLLECTIONS } = await import("./server/firebase.mjs");
-                const { doc, setDoc } = await import("firebase/firestore");
                 const cleanData: Record<string, unknown> = {};
                 for (const [k, v] of Object.entries(result.doctor as Record<string, unknown>)) {
                   if (v !== undefined) cleanData[k] = v;
@@ -578,12 +808,33 @@ function grnIntelligentParserPlugin(): Plugin {
                 ? url.pathname.replace("/api/doctors/", "")
                 : null;
               const id = payload.id || urlId;
-              const { doctors = [] } = payload;
+              let { doctors = [] } = payload;
+
+              const { db, COLLECTIONS } = await import("./server/firebase.mjs");
+              const { doc, getDoc, getDocs, deleteDoc, collection } = await import("firebase/firestore");
+
+              if (!Array.isArray(doctors) || doctors.length === 0) {
+                try {
+                  const snap = await getDocs(collection(db, COLLECTIONS.doctors));
+                  doctors = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+                } catch {
+                  // fallback
+                }
+              }
+              if (!doctors.some((d: any) => d && d.id === id)) {
+                try {
+                  const docSnap = await getDoc(doc(db, COLLECTIONS.doctors, id));
+                  if (docSnap.exists()) {
+                    doctors.push({ id: docSnap.id, ...docSnap.data() });
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+
               const result = deleteDoctor(id, doctors);
 
               try {
-                const { db, COLLECTIONS } = await import("./server/firebase.mjs");
-                const { doc, deleteDoc } = await import("firebase/firestore");
                 await deleteDoc(doc(db, COLLECTIONS.doctors, id));
               } catch (dbErr) {
                 console.warn("[Vite doctor Firestore delete warning]", (dbErr as Error).message);
