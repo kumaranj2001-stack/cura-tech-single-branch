@@ -20,7 +20,7 @@ const Billing: React.FC = () => {
   const [patientPhone, setPatientPhone] = useState("");
   const [patientId, setPatientId] = useState<string | undefined>();
   const [discountType, setDiscountType] = useState<"fixed" | "percent">("percent");
-  const [discountValue, setDiscountValue] = useState(0);
+  const [discountValue, setDiscountValue] = useState<number | "">("");
   const [warning, setWarning] = useState("");
   const [printInv, setPrintInv] = useState<Invoice | null>(null);
   const [viewRx, setViewRx] = useState<{ url: string; type: string; name: string } | null>(null);
@@ -32,11 +32,14 @@ const Billing: React.FC = () => {
   const [doctorId, setDoctorId] = useState<string | undefined>();
   const [doctorName, setDoctorName] = useState("");
   const [doctorHospital, setDoctorHospital] = useState("");
+  const [doctorAddress, setDoctorAddress] = useState("");
   const [doctorPhone, setDoctorPhone] = useState("");
   const [doctorQuery, setDoctorQuery] = useState("");
   const [doctorMenuOpen, setDoctorMenuOpen] = useState(false);
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [ndForm, setNdForm] = useState({ name: "", hospital: "", hospitalAddress: "", phone: "" });
+
+  const today = new Date().toISOString().slice(0, 10);
 
   /* Narcotic & Prescription document state (unlimited upload size) */
   const [rxUrl, setRxUrl] = useState("");
@@ -219,6 +222,7 @@ const Billing: React.FC = () => {
     setDoctorId(d.id);
     setDoctorName(d.name);
     setDoctorHospital(d.hospital);
+    setDoctorAddress(d.hospitalAddress || "");
     setDoctorPhone(d.phone);
     setDoctorQuery("");
     setDoctorMenuOpen(false);
@@ -228,6 +232,7 @@ const Billing: React.FC = () => {
     setDoctorId(undefined);
     setDoctorName("");
     setDoctorHospital("");
+    setDoctorAddress("");
     setDoctorPhone("");
     setDoctorQuery("");
   };
@@ -328,7 +333,7 @@ const Billing: React.FC = () => {
       return;
     }
     if (availablePaymentMethods.length > 0 && !availablePaymentMethods.some((m) => m.id === payMethod)) {
-      setPayMethod(availablePaymentMethods[0].id as "cash" | "card" | "upi");
+      setPayMethod(availablePaymentMethods[0].id);
     }
   }, [flags.paymentsMaster, availablePaymentMethods, payMethod]);
 
@@ -408,7 +413,7 @@ const Billing: React.FC = () => {
   const removeItem = (id: string) => setItems(items.filter((i) => i.medicineId !== id));
 
   const totals = useMemo(() => {
-    return calculateBillingTotals(items, discountType, discountValue);
+    return calculateBillingTotals(items, discountType, discountValue === "" ? 0 : discountValue);
   }, [items, discountType, discountValue]);
 
   /* ── POS Swipe Machine push flow ── */
@@ -483,7 +488,7 @@ const Billing: React.FC = () => {
       subtotal: totals.subtotal,
       discount: totals.discount,
       discountType,
-      discountValue,
+      discountValue: discountValue === "" ? 0 : discountValue,
       taxAmount: totals.taxAmount,
       total: totals.total,
       date: new Date().toISOString(),
@@ -524,17 +529,12 @@ const Billing: React.FC = () => {
       };
     });
     log("BILLING_CREATE", `Invoice ${inv.number} for ${patientName} — ${fmtCurrency(inv.total)}${hasNarcotic ? " (Narcotic prescription verified)" : ""}`);
-    fetch("/api/invoices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(inv),
-    }).catch(() => {});
     setPrintInv(inv);
     setItems([]);
     setPatientName("");
     setPatientPhone("");
     setPatientId(undefined);
-    setDiscountValue(0);
+    setDiscountValue("");
     setWarning("");
     setPayMethod("cash");
     setRxUrl("");
@@ -1075,7 +1075,10 @@ const Billing: React.FC = () => {
                   type="number" 
                   min={0} 
                   value={discountValue} 
-                  onChange={(e) => setDiscountValue(Number(e.target.value))} 
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setDiscountValue(val === "" ? "" : Number(val));
+                  }} 
                   placeholder={discountType === "percent" ? "Enter %" : "Enter ₹"} 
                 />
               </div>

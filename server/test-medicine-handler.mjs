@@ -2,8 +2,10 @@ import assert from "node:assert/strict";
 import {
   validateMedicinePayload,
   createMedicine,
+  createMedicineBatch,
   updateMedicine,
   deleteMedicine,
+  searchMedicines,
 } from "./medicineHandler.mjs";
 
 console.log("==========================================");
@@ -129,28 +131,151 @@ assert.equal(deleted.medicines.length, 1);
 assert.equal(deleted.medicines[0].id, "m_1");
 console.log("✓ Medicine deleted successfully");
 
-// 5. GRN Mode: Initial master medicine creation without prior stock
-console.log("\n5. Testing master medicine creation with GRN mode (requirePurchaseDetails: false)...");
-const grnModePayload = {
-  name: "Cefixime 200mg",
-  supplier: "Apex Healthcare",
-  stock: 0,
-  purchasePrice: 0,
-  sellingPrice: 0,
-  gst: 12,
-  minStock: 10,
-};
-const grnModeValidation = validateMedicinePayload(grnModePayload, { requirePurchaseDetails: false });
-assert.equal(grnModeValidation.isValid, true);
-assert.equal(grnModeValidation.cleanData.stock, 0);
-assert.equal(grnModeValidation.cleanData.purchasePrice, 0);
-assert.equal(grnModeValidation.cleanData.sellingPrice, 0);
+// 5. Search & indexing tests
+console.log("\n5. Testing searchMedicines indexing and auto-suggest...");
+const searchPool = [
+  { id: "m_1", name: "Dolo 650", batch: "B101", supplier: "Apex", purchasePrice: 10, sellingPrice: 20, stock: 50, branchId: "br_main" },
+  { id: "m_2", name: "Dolo 650", batch: "", supplier: "Apex", purchasePrice: 0, sellingPrice: 0, stock: 0, branchId: "br_main" },
+  { id: "m_3", name: "Paracetamol 500", batch: "P500", supplier: "Cipla", purchasePrice: 5, sellingPrice: 10, stock: 100, branchId: "br_main" },
+  { id: "m_4", name: "Amoxicillin 250", batch: "AMX1", supplier: "Sun Pharma", purchasePrice: 15, sellingPrice: 25, stock: 30, branchId: "br_north" },
+];
 
-const grnModeCreated = createMedicine(grnModePayload, existingMedicines, { requirePurchaseDetails: false });
-assert.equal(grnModeCreated.success, true);
-assert.equal(grnModeCreated.medicine.name, "Cefixime 200mg");
-assert.equal(grnModeCreated.medicine.stock, 0);
-assert.ok(grnModeCreated.medicine.createdAt, "createdAt timestamp must be set");
-console.log("✓ Master medicine created successfully with 0 initial stock & pricing for GRN intake");
+const doloSearch = searchMedicines(searchPool, { q: "dolo" });
+assert.equal(doloSearch.length, 1);
+assert.equal(doloSearch[0].name, "Dolo 650");
+assert.equal(doloSearch[0].purchasePrice, 10);
+assert.equal(doloSearch[0].batch, "B101");
+console.log("✓ Dolo search deduplicated by name and kept richest entry");
+
+const batchSearch = searchMedicines(searchPool, { q: "AMX1" });
+assert.equal(batchSearch.length, 1);
+assert.equal(batchSearch[0].name, "Amoxicillin 250");
+console.log("✓ Search by batch code succeeded");
+
+const supplierSearch = searchMedicines(searchPool, { q: "cipla" });
+assert.equal(supplierSearch.length, 1);
+assert.equal(supplierSearch[0].name, "Paracetamol 500");
+console.log("✓ Search by supplier name succeeded");
+
+// 6. GRN catalog registration: name + classification only, stock and prices start at 0
+console.log("\n6. Testing GRN catalog create without purchase details...");
+const catalog = validateMedicinePayload(
+  {
+    name: "at",
+    stock: 0,
+    purchasePrice: 0,
+    sellingPrice: 0,
+    narcotic: false,
+    minStock: 10,
+    supplier: "",
+    batch: "",
+    expiry: "",
+    mfgDate: "",
+  },
+  { requirePurchaseDetails: false }
+);
+assert.equal(catalog.isValid, true);
+assert.equal(catalog.cleanData.stock, 0);
+assert.equal(catalog.cleanData.purchasePrice, 0);
+assert.equal(catalog.cleanData.sellingPrice, 0);
+assert.equal(catalog.cleanData.minStock, 10);
+
+const catalogCreated = createMedicine(
+  { name: "Catalog Med GRN", stock: 0, purchasePrice: 0, sellingPrice: 0, narcotic: false, minStock: 10 },
+  [],
+  { requirePurchaseDetails: false }
+);
+assert.equal(catalogCreated.success, true);
+assert.equal(catalogCreated.medicine.name, "Catalog Med GRN");
+const catalogSearch = searchMedicines(
+  [{ id: "older", name: "Existing Item", stock: 1, purchasePrice: 1, sellingPrice: 2 }, catalogCreated.medicine],
+  { q: "catalog med" }
+);
+assert.equal(catalogSearch.length, 1);
+assert.equal(catalogSearch[0].id, catalogCreated.medicine.id);
+const fullList = searchMedicines(
+  Array.from({ length: 40 }, (_, i) => ({ id: `bulk_${i}`, name: `Bulk ${i}`, stock: 1, purchasePrice: 1, sellingPrice: 2 })).concat([
+    catalogCreated.medicine,
+  ]),
+  {}
+);
+assert.ok(fullList.length > 30);
+assert.ok(fullList.some((m) => m.id === catalogCreated.medicine.id));
+console.log("✓ Catalog medicine saved with zero stock and remains searchable");
+
+// 7. Multi-product batch entry tests (Inventory Module Batch Workflow)
+console.log("\n7. Testing multi-product batch entry under single supplier...");
+const batchSupplier = "Apex Lifecare Distributors";
+const batchPayloadItems = [
+  {
+    name: "Cefixime 200mg Tablet",
+    batch: "CEF-201",
+    stock: 50,
+    mfgDate: "2026-01-10",
+    expiry: "2027-12-31",
+    purchasePrice: 45.5,
+    sellingPrice: 70.0,
+    gst: 12,
+    narcotic: false,
+    minStock: 15,
+  },
+  {
+    name: "Alprazolam 0.5mg",
+    batch: "ALP-88",
+    stock: 100,
+    mfgDate: "2026-02-01",
+    expiry: "2028-01-31",
+    purchasePrice: 12.0,
+    sellingPrice: 22.5,
+    gst: 12,
+    narcotic: true,
+    minStock: 25,
+  },
+  {
+    name: "Paracetamol 650mg Fast-Action",
+    batch: "PCM-991",
+    stock: 200,
+    mfgDate: "2026-01-15",
+    expiry: "2027-06-30",
+    purchasePrice: 18.0,
+    sellingPrice: 30.0,
+    gst: 5,
+    narcotic: false,
+    minStock: 50,
+  },
+];
+
+const batchResult = createMedicineBatch(batchPayloadItems, [], {
+  supplier: batchSupplier,
+  requirePurchaseDetails: true,
+});
+
+assert.equal(batchResult.success, true);
+assert.equal(batchResult.count, 3);
+assert.equal(batchResult.created.length, 3);
+assert.equal(batchResult.created[0].supplier, batchSupplier);
+assert.equal(batchResult.created[1].supplier, batchSupplier);
+assert.equal(batchResult.created[1].narcotic, true);
+assert.equal(batchResult.created[2].gst, 5);
+assert.ok(batchResult.created[0].id.startsWith("m_"));
+console.log("✓ Successfully validated and created 3 staged medicines in a single batch");
+
+// Verify that an invalid batch item throws an informative error
+let batchRejected = false;
+try {
+  createMedicineBatch(
+    [
+      { name: "Valid Med", stock: 10, purchasePrice: 5, sellingPrice: 10, expiry: "2027-01-01" },
+      { name: "", stock: 10, purchasePrice: 5, sellingPrice: 10, expiry: "2027-01-01" }, // Blank name
+    ],
+    [],
+    { supplier: batchSupplier }
+  );
+} catch (bErr) {
+  batchRejected = true;
+  assert.ok(bErr.message.includes("Batch validation failed"));
+}
+assert.equal(batchRejected, true);
+console.log("✓ Invalid batch element properly blocked batch submission");
 
 console.log("\nALL MEDICINE HANDLER UNIT TESTS PASSED!");

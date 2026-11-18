@@ -7,16 +7,13 @@ import { Printer, FileDown, MessageCircle, X } from "lucide-react";
 import logoUrl from "../assets/logo.png";
 
 const InvoicePrint: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ invoice, onClose }) => {
-  const { flags, data, currentBranch, currentUser, storeProfile } = useStore();
-  const branch = data.branches.find((b) => b.id === (invoice.branchId || currentBranch?.id || currentUser?.branchId || "br_main")) || data.branches[0];
+  const { flags, data, currentBranch, currentUser } = useStore();
+  const branch = data.branches.find((b) => b.id === (invoice.branchId || currentBranch?.id || currentUser?.branchId || "br_main"));
   const profile = {
-    name: storeProfile?.name || branch?.storeName || branch?.name || "Guru Pharmacy",
-    tagline: storeProfile?.tagline || "Your trusted pharmacy partner",
-    address: storeProfile?.address || branch?.address || "",
-    contact: storeProfile?.contact || branch?.phone || "",
-    gstNumber: storeProfile?.gstNumber || branch?.gstNumber || "",
-    dlNumber: storeProfile?.dlNumber || "",
-    email: storeProfile?.email || "",
+    name: branch?.storeName || branch?.name || "",
+    address: branch?.address || "",
+    contact: branch?.phone || "",
+    gstNumber: branch?.gstNumber || "",
   };
   const [busy, setBusy] = useState<"pdf" | "wa" | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
@@ -152,8 +149,8 @@ const InvoicePrint: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ inv
                 <div className="flex items-center gap-3">
                   <img src={logoUrl} alt="Guru logo" className="w-12 h-12 sm:w-14 sm:h-14 object-contain" />
                   <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-sky-700">{profile.name || "GURU PHARMACY"}</h1>
-                    <div className="text-xs text-slate-600">{profile.tagline || "Your trusted pharmacy partner"}</div>
+                    <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-sky-700">{profile.name || "GURU"}</h1>
+                    <div className="text-xs text-slate-600">Your trusted pharmacy partner</div>
                   </div>
                 </div>
                 {profile.address && (
@@ -165,10 +162,12 @@ const InvoicePrint: React.FC<{ invoice: Invoice; onClose: () => void }> = ({ inv
               </div>
               <div className="text-left sm:text-right text-xs text-slate-600">
                 <div className="font-semibold text-slate-800">TAX INVOICE</div>
-                {profile.contact && <div>Phone: {profile.contact}</div>}
-                {profile.dlNumber && <div>D.L. No: {profile.dlNumber}</div>}
-                {profile.gstNumber && <div className="mt-0.5 font-semibold text-slate-800">GSTIN: {profile.gstNumber}</div>}
-                {profile.email && <div className="text-[11px] text-slate-500">Email: {profile.email}</div>}
+                <div>Phone: {profile.contact || "+91 98765 43210"}</div>
+                {profile.gstNumber ? (
+                  <div className="mt-1 font-semibold text-slate-800">GSTIN: {profile.gstNumber}</div>
+                ) : (
+                  <div>Email: info@gurupharma.com</div>
+                )}
               </div>
             </div>
 

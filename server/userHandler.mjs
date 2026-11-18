@@ -44,18 +44,23 @@ export function validateUserPayload(payload = {}, isUpdate = false) {
       name,
       password,
       role: role || "staff",
-      branchId: payload.branchId ? String(payload.branchId).trim() : "br_main",
+      branchId: payload.branchId ? String(payload.branchId).trim() : undefined,
       active: payload.active !== undefined ? Boolean(payload.active) : true,
     },
   };
 }
 
-export function listUsers(users = [], options = {}) {
+export function listUsers(users = [], options = {}, callerRole = "") {
   const { branchId, role, q = "" } = options;
   const search = String(q || "").trim().toLowerCase();
+  const isDevCaller = String(callerRole || "").trim().toLowerCase() === "developer";
 
   return (users || []).filter((u) => {
     if (!u) return false;
+    // Developer accounts must be entirely omitted from non-developer roles
+    if (!isDevCaller && (u.role === "developer" || u.username === "guru")) {
+      return false;
+    }
     if (branchId && branchId !== "all" && u.branchId !== branchId) return false;
     if (role && u.role !== role) return false;
     if (search) {
@@ -67,7 +72,7 @@ export function listUsers(users = [], options = {}) {
   });
 }
 
-export function createUser(payload = {}, existingUsers = []) {
+export function createUser(payload = {}, existingUsers = [], callerRole = "", planLimits = null) {
   const validation = validateUserPayload(payload, false);
   if (!validation.valid) {
     const err = new Error(validation.errors.join("; "));
@@ -76,6 +81,31 @@ export function createUser(payload = {}, existingUsers = []) {
   }
 
   const { username, name, password, role, branchId, active } = validation.cleaned;
+  const isDevCaller = String(callerRole || "").trim().toLowerCase() === "developer";
+
+  // Admins and Super Admins are strictly restricted to adding Staff accounts
+  if (!isDevCaller && role !== "staff") {
+    const err = new Error("Access Denied: Admins and Super Admins can only add Staff members. Only Developer can add Admin, Super Admin, and Developer accounts.");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  // Quota enforcement based on plan assigned to Developer
+  if (planLimits && typeof planLimits === "object") {
+    const maxQuota = role === "staff" ? planLimits.staff
+      : role === "admin" ? planLimits.admin
+      : role === "superadmin" ? planLimits.superadmin
+      : Infinity;
+
+    if (Number.isFinite(maxQuota)) {
+      const used = (existingUsers || []).filter((u) => u && u.role === role).length;
+      if (used >= maxQuota) {
+        const err = new Error(`Quota limit reached: The current plan permits a maximum of ${maxQuota} ${role} account(s).`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+  }
 
   // Check username uniqueness
   const duplicate = existingUsers.find((u) => u && String(u.username).toLowerCase() === username);
@@ -105,11 +135,23 @@ export function createUser(payload = {}, existingUsers = []) {
   };
 }
 
-export function updateUser(id, patch = {}, existingUsers = []) {
+export function updateUser(id, patch = {}, existingUsers = [], callerRole = "") {
   if (!id) {
     const err = new Error("User ID is required for update.");
     err.statusCode = 400;
     throw err;
+  }
+
+  const isDevCaller = String(callerRole || "").trim().toLowerCase() === "developer";
+  if (!isDevCaller) {
+    // Non-developers (Super Admin, Admin) are strictly capped at toggling account status between Active and Deactivated
+    const patchKeys = Object.keys(patch).filter((k) => k !== "role" && k !== "users" && k !== "id");
+    const hasRestrictedField = patchKeys.some((k) => k !== "active");
+    if (hasRestrictedField) {
+      const err = new Error("Access Denied: Only Developer can modify user credentials and profile details. Super Admins and Admins can only toggle active status.");
+      err.statusCode = 403;
+      throw err;
+    }
   }
 
   const userIndex = existingUsers.findIndex((u) => u && u.id === id);
@@ -158,10 +200,17 @@ export function updateUser(id, patch = {}, existingUsers = []) {
   };
 }
 
-export function deleteUser(id, existingUsers = []) {
+export function deleteUser(id, existingUsers = [], callerRole = "") {
   if (!id) {
     const err = new Error("User ID is required for deletion.");
     err.statusCode = 400;
+    throw err;
+  }
+
+  const isDevCaller = String(callerRole || "").trim().toLowerCase() === "developer";
+  if (!isDevCaller) {
+    const err = new Error("Access Denied: Only Developer can delete user profiles.");
+    err.statusCode = 403;
     throw err;
   }
 

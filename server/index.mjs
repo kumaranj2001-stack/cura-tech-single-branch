@@ -1509,8 +1509,13 @@ const server = http.createServer(async (req, res) => {
   // ── AUDIT LOG ENDPOINTS (Stores to Firestore gp_audit) ──
   if (req.method === "GET" && url.pathname === "/api/audit") {
     try {
+      const metaSnap = await getDoc(doc(db, COLLECTIONS.meta, "app"));
+      const auditClearedAt = metaSnap.exists() ? metaSnap.data()?.auditClearedAt : null;
       const snap = await getDocs(collection(db, COLLECTIONS.audit));
       let audit = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      if (auditClearedAt) {
+        audit = audit.filter((a) => a.timestamp > auditClearedAt);
+      }
       audit.sort((a, b) => new Date(b.timestamp || 0).getTime() - new Date(a.timestamp || 0).getTime());
       return sendJson(res, 200, { success: true, count: audit.length, audit: audit.slice(0, 500) });
     } catch (err) {

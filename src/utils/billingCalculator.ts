@@ -1,15 +1,16 @@
 export interface BillLineItemInput {
   price: number;
   qty: number;
+  [key: string]: unknown;
 }
 
-export interface BillingCalculationResult<T = BillLineItemInput> {
+export interface BillingCalculationResult {
   subtotal: number;
   discount: number;
   taxAmount: number;
   total: number;
   grandTotal: number;
-  items: Array<T & { lineTotal: number }>;
+  items: Array<BillLineItemInput & { lineTotal: number }>;
 }
 
 /**
@@ -17,11 +18,11 @@ export interface BillingCalculationResult<T = BillLineItemInput> {
  * Line item calculation is simply unit price multiplied by quantity (price * qty).
  * The final total reflects that amount minus any discounts.
  */
-export function calculateBillingTotals<T extends { price: number; qty: number }>(
-  items: T[],
+export function calculateBillingTotals(
+  items: BillLineItemInput[],
   discountType: "fixed" | "percent" = "percent",
   discountValue: number = 0
-): BillingCalculationResult<T> {
+): BillingCalculationResult {
   const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
   let subtotal = 0;

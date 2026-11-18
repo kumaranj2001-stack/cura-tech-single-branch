@@ -3,7 +3,7 @@ import { useStore } from "../store/store";
 import { useTheme } from "../store/theme";
 import { Button, Input, Label, PasswordInput } from "../components/ui";
 import { sanitizeUsername, sanitizePassword } from "../utils/security";
-import { Activity, ShieldCheck, UserRound, Lock, Loader2, Moon, Sun, ClipboardCheck } from "lucide-react";
+import { Activity, ShieldCheck, Network, UserRound, Lock, Loader2, Moon, Sun, ClipboardCheck } from "lucide-react";
 import logoUrl from "../assets/logo.png";
 import Privacy from "./Privacy";
 
@@ -66,7 +66,7 @@ const Login: React.FC = () => {
 
         <div className="relative">
           <h1 className="text-4xl xl:text-5xl font-extrabold tracking-tight leading-[1.05] rise rise-2">
-            Complete Pharmacy.<br />Every batch.<br />
+            Every branch.<br />Every batch.<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400">One console.</span>
           </h1>
 
@@ -96,9 +96,9 @@ const Login: React.FC = () => {
 
           <div className="mt-6 grid grid-cols-3 gap-3 rise rise-3">
             {[
-              { icon: ShieldCheck, label: "Complete ERP", sub: "cloud sync" },
+              { icon: Network, label: "Multi-branch", sub: "live sync" },
               { icon: ClipboardCheck, label: "GRN workflow", sub: "approve & fix" },
-              { icon: Activity, label: "Smart Billing", sub: "fast & GST-ready" },
+              { icon: ShieldCheck, label: "Role-guarded", sub: "audit trail" },
             ].map((f) => (
               <div key={f.label} className="rounded-xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-200">
                 <f.icon className="w-4 h-4 text-sky-400 mb-2" />
@@ -178,9 +178,9 @@ const Login: React.FC = () => {
                 </div>
               )}
 
-              <Button type="submit" className="w-full" disabled={loading}>
+              <Button type="submit" className="w-full" disabled={loading || (!cloudReady && !cloudError)}>
                 {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Signing in..." : !cloudReady && !cloudError ? "Connecting..." : "Sign In"}
               </Button>
             </form>
           </div>

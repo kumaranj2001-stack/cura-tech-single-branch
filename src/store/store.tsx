@@ -85,28 +85,7 @@ const defaultUsers: User[] = [
   },
 ];
 
-const defaultDoctors: Doctor[] = [
-  {
-    id: "doc_1",
-    name: "Dr. Arvind Sharma",
-    hospital: "Apollo Multispecialty Hospital",
-    hospitalAddress: "Plot 14, Health City, Main Road",
-    phone: "9876543210",
-    regNo: "MCI-48291",
-    branchId: "br_main",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "doc_2",
-    name: "Dr. Priya Nair",
-    hospital: "Fortis City Clinic",
-    hospitalAddress: "Sector 5, Medical Enclave",
-    phone: "9811223344",
-    regNo: "MCI-73910",
-    branchId: "br_main",
-    createdAt: new Date().toISOString(),
-  },
-];
+const defaultDoctors: Doctor[] = [];
 
 /* Clean start: one branch, the four role accounts, zero business data */
 const seedData = (): AppData => ({
@@ -187,7 +166,7 @@ function ensureDefaults(data: AppData): AppData {
   return next;
 }
 
-const DATA_PURGED_MARKER = "gp_purged_data_v3_20261028";
+const DATA_PURGED_MARKER = "gp_purged_data_v3_ready_finished_clean";
 
 function initialData(): AppData {
   const local = getLocalData();
@@ -196,18 +175,14 @@ function initialData(): AppData {
     try {
       localStorage.setItem(DATA_PURGED_MARKER, new Date().toISOString());
       const clean = seedData();
-      if (local) {
-        clean.branches = local.branches && local.branches.length > 0 ? local.branches : clean.branches;
-        clean.users = local.users && local.users.length > 0 ? local.users : clean.users;
-        clean.patients = local.patients || [];
-        clean.doctors = local.doctors && local.doctors.length > 0 ? local.doctors : clean.doctors;
-        clean.suppliers = local.suppliers || [];
-      }
       clean.medicines = [];
       clean.invoices = [];
       clean.audit = [];
       clean.grns = [];
       clean.returns = [];
+      clean.patients = [];
+      clean.doctors = [];
+      clean.suppliers = [];
       clean.counters = { invoice: 1000, grn: 500 };
       saveLocalData(clean);
       return ensureDefaults(clean);

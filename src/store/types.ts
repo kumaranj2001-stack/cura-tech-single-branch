@@ -130,9 +130,6 @@ export interface StoreProfile {
   address?: string;   // registered address
   contact?: string;   // phone / contact
   gstNumber?: string; // GSTIN
-  dlNumber?: string;  // drug license number
-  tagline?: string;   // pharmacy tagline / slogan
-  email?: string;     // contact email
 }
 
 export interface Supplier {
@@ -217,6 +214,7 @@ export interface GRN {
   aiExtracted?: boolean;
   modelUsed?: string;
   extractedAt?: string;
+  createdAt?: string;
 }
 
 export interface ReturnEntry {
@@ -313,10 +311,12 @@ export interface FeatureFlags {
   repUserSalesPdf: boolean;
   narcoticPrescriptionRequired: boolean;
   minStockFeature: boolean;
+  supplierSelfRegistration?: boolean;
+  doctorAddAdminAllowed?: boolean;
 }
 
-/* ── Developer-controlled staff / account plans ──── */
-export type StaffPlanTier = 5;
+/* ── Developer-controlled staff / account plans (mutually exclusive) ──── */
+export type StaffPlanTier = 1 | 2 | 3 | 4 | 5;
 
 export interface StaffPlanLimits {
   superadmin: number;
@@ -336,14 +336,20 @@ export const STAFF_PLAN_OPTIONS: {
   hint: string;
   limits: StaffPlanLimits;
 }[] = [
-  { tier: 5, label: "Fully Customizable", hint: "Customizable quotas per role (Super Admin, Admin, Staff). Defined and managed by Super Admins.", limits: DEFAULT_CUSTOM_STAFF_LIMITS },
+  {
+    tier: 5,
+    label: "Fully Customizable",
+    hint: "Customizable quotas per role (Super Admin, Admin, Staff). Defined and managed by Super Admins.",
+    limits: DEFAULT_CUSTOM_STAFF_LIMITS,
+  },
 ];
 
-export const planAllowsMultiBranch = (_tier?: StaffPlanTier, _customLimits?: StaffPlanLimits) => false;
+export const planAllowsMultiBranch = (tier: StaffPlanTier, customLimits?: StaffPlanLimits) =>
+  tier === 4 || (customLimits ?? DEFAULT_CUSTOM_STAFF_LIMITS).superadmin > 0;
 
 export const DEFAULT_STAFF_PLAN: StaffPlanTier = 5;
 
-export const staffPlanLimits = (_tier?: StaffPlanTier | number, customLimits?: StaffPlanLimits): StaffPlanLimits => {
+export const staffPlanLimits = (tier: StaffPlanTier, customLimits?: StaffPlanLimits): StaffPlanLimits => {
   const base = customLimits ?? DEFAULT_CUSTOM_STAFF_LIMITS;
   return {
     superadmin: typeof base.superadmin === "number" ? Math.max(0, base.superadmin) : 0,
@@ -353,7 +359,7 @@ export const staffPlanLimits = (_tier?: StaffPlanTier | number, customLimits?: S
 };
 
 export const isStaffPlanTier = (value: unknown): value is StaffPlanTier =>
-  value === 5;
+  value === 1 || value === 2 || value === 3 || value === 4 || value === 5;
 
 export const formatPlanCap = (n: number) => (Number.isFinite(n) ? String(n) : "unlimited");
 
@@ -444,6 +450,8 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   repUserSalesPdf: true,
   narcoticPrescriptionRequired: true,
   minStockFeature: true,
+  supplierSelfRegistration: false,
+  doctorAddAdminAllowed: false,
 };
 
 export const getAuditRetentionDays = (flags: FeatureFlags): number | null => {

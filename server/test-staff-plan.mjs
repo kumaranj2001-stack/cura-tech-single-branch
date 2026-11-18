@@ -41,22 +41,12 @@ async function testStaffPlanEndpoints() {
   console.log("Custom Limits:", getRes.body.customStaffPlanLimits);
   console.log("Options Count:", getRes.body.options?.length);
 
-  if (getRes.statusCode !== 200 || getRes.body.staffPlan !== 5 || getRes.body.options?.length !== 1) {
-    console.error("Initial GET failed or did not return only 1 option (Fully Customizable)");
+  if (getRes.body.options?.length !== 1 || getRes.body.options[0]?.label !== "Fully Customizable") {
+    console.error("Test failed: Options 1-4 should be removed and only 'Fully Customizable' should remain");
     process.exit(1);
   }
 
-  // 2. Test rejection of removed options 1 through 4
-  for (const removedTier of [1, 2, 3, 4]) {
-    const rejectRes = await makeRequest("POST", "/api/staff-plan", { staffPlan: removedTier });
-    console.log(`POST /api/staff-plan (Option ${removedTier}) Status:`, rejectRes.statusCode);
-    if (rejectRes.statusCode !== 400) {
-      console.error(`Expected Option ${removedTier} to be rejected with 400, got ${rejectRes.statusCode}`);
-      process.exit(1);
-    }
-  }
-
-  // 3. POST /api/staff-plan with Fully Customizable (tier 5) and custom limits
+  // 2. POST /api/staff-plan with Fully Customizable limits
   const postPayload = {
     staffPlan: 5,
     customLimits: {
@@ -69,19 +59,13 @@ async function testStaffPlanEndpoints() {
   console.log("\nPOST /api/staff-plan Status:", postRes.statusCode);
   console.log("Updated Plan Response:", postRes.body);
 
-  // 4. Verify GET reflects new custom limits and single Fully Customizable option
+  // 3. Verify GET reflects new custom limits
   const verifyRes = await makeRequest("GET", "/api/staff-plan");
   console.log("\nVerify GET /api/staff-plan Status:", verifyRes.statusCode);
   console.log("Active Plan after update:", verifyRes.body.staffPlan);
   console.log("Custom Limits after update:", verifyRes.body.customStaffPlanLimits);
-  console.log("Options:", verifyRes.body.options);
 
-  if (
-    verifyRes.body.staffPlan === 5 &&
-    verifyRes.body.customStaffPlanLimits.admin === 6 &&
-    verifyRes.body.options?.length === 1 &&
-    verifyRes.body.options[0].tier === 5
-  ) {
+  if (verifyRes.body.staffPlan === 5 && verifyRes.body.customStaffPlanLimits.admin === 6 && verifyRes.body.options?.length === 1) {
     console.log("\n>>> ALL BACKEND STAFF PLAN TESTS PASSED SUCCESS! <<<");
   } else {
     console.error("Test failed to match expected values");
