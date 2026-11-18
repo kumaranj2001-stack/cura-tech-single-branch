@@ -37,7 +37,7 @@ const starterBranch: Branch = {
   id: "br_main",
   name: "Main Pharmacy",
   code: "MAIN",
-  storeName: "Guru Pharmacy",
+  storeName: "CURAVITE Pharmacy",
   address: "",
   phone: "",
   active: true,
@@ -218,7 +218,7 @@ function mergeScoped(_full: AppData, scopedNext: AppData, _branchId: string | nu
 }
 
 export interface BranchBackupFile {
-  kind: "guru-branch";
+  kind: "curavite-branch" | "guru-branch";
   version: 1;
   branchId: string;
   exportedAt: string;
@@ -613,7 +613,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (raw) return JSON.parse(raw);
     } catch {}
     return {
-      name: "Guru Pharmacy",
+      name: "CURAVITE Pharmacy",
       address: "",
       contact: "",
       gstNumber: "",
@@ -680,7 +680,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
         setDoc(doc(db, COLLECTIONS.branches, "br_main"), {
           name: next.name || "Main Pharmacy",
-          storeName: next.name || "Guru Pharmacy",
+          storeName: next.name || "CURAVITE Pharmacy",
           address: next.address || "",
           phone: next.contact || "",
           gstNumber: next.gstNumber || "",
@@ -862,7 +862,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const buildBranchBackup = useCallback((_branchId?: string): BranchBackupFile => {
     const activeBranch = fullDataRef.current.branches[0] || starterBranch;
     return {
-      kind: "guru-branch",
+      kind: "curavite-branch",
       version: 1,
       branchId: activeBranch.id,
       exportedAt: new Date().toISOString(),

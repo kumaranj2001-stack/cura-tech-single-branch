@@ -42,7 +42,7 @@ const server = http.createServer(async (req, res) => {
   if (req.method === "GET" && (url.pathname === "/api/health" || url.pathname === "/")) {
     return sendJson(res, 200, {
       status: "ok",
-      service: "Guru Pharma GRN Document Parsing Backend",
+      service: "CURAVITE GRN Document Parsing Backend",
       version: "1.0.0",
       firebase: {
         projectId: firebaseConfig.projectId,

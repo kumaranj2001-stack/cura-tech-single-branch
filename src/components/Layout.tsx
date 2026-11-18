@@ -92,11 +92,11 @@ const Layout: React.FC<{ page: PageId; setPage: (p: PageId) => void; children: R
       >
         <div className={cn("px-4 lg:px-3 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-3 transition-all", rail && "lg:justify-center lg:px-0")}>
           <div className="w-11 h-11 shrink-0 rounded-xl bg-white ring-1 ring-slate-200 dark:ring-slate-600 flex items-center justify-center overflow-hidden shadow-sm">
-            <img src={logoUrl} alt="Guru logo" className="w-9 h-9 object-contain" />
+            <img src={logoUrl} alt="CURAVITE logo" className="w-9 h-9 object-contain" />
           </div>
           <div className={cn("min-w-0 transition-all duration-200", rail && "lg:w-0 lg:opacity-0 lg:overflow-hidden")}>
             <div className="font-extrabold tracking-tight text-slate-800 dark:text-slate-100 leading-tight whitespace-nowrap">
-              GU<span className="text-sky-600 dark:text-sky-400">RU</span>
+              CURA<span className="text-sky-600 dark:text-sky-400">VITE</span>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">Pharmacy Suite</div>
           </div>
@@ -164,7 +164,7 @@ const Layout: React.FC<{ page: PageId; setPage: (p: PageId) => void; children: R
                 </h2>
                 <div className="flex flex-wrap items-center gap-2 mt-1 text-xs">
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-100/90 dark:bg-slate-800/90 px-2.5 py-0.5 text-slate-700 dark:text-slate-300 font-medium">
-                    🏪 {storeProfile?.name || currentBranch?.storeName || currentBranch?.name || "Guru Pharmacy"}
+                    🏪 {storeProfile?.name || currentBranch?.storeName || currentBranch?.name || "CURAVITE Pharmacy"}
                   </span>
                   {isOverseer(currentUser?.role) && (
                     <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/30 px-2.5 py-0.5 text-violet-700 dark:text-violet-300 font-semibold">

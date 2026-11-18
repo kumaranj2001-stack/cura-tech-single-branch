@@ -1,5 +1,5 @@
 /**
- * User Management Handler for Cura-Tech / Guru Pharma ERP
+ * User Management Handler for CURAVITE ERP
  * Handles user validation, creation, editing (name, username, password, role, branch),
  * password resets, activation toggles, and deletion.
  */

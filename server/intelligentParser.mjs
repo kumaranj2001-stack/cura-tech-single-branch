@@ -103,7 +103,7 @@ export function validateBatchNumber({
  * field values, layout patterns, and strict anti-confusion rules for batch vs serial numbers.
  */
 function buildSystemPrompt() {
-  return `You are an expert pharmaceutical document parser and invoice normalization engine for a hospital/pharmacy ERP system (Guru Pharma).
+  return `You are an expert pharmaceutical document parser and invoice normalization engine for a hospital/pharmacy ERP system (CURAVITE).
 Your mission is to accurately extract invoice header details and normalize all product line items from the attached supplier invoice document.
 
 ### CRITICAL ARCHITECTURAL DIRECTIVE - SEMANTIC ANALYSIS OVER FIXED POSITIONS:
@@ -299,10 +299,10 @@ export async function parseInvoiceDocument({
   const today = new Date().toISOString().slice(0, 10);
 
   const contextPrompt = `
-Known Registered Suppliers in Guru Pharma System:
+Known Registered Suppliers in CURAVITE System:
 ${JSON.stringify(compactSuppliers, null, 2)}
 
-Known Inventory Medicines in Guru Pharma System:
+Known Inventory Medicines in CURAVITE System:
 ${JSON.stringify(compactMedicines, null, 2)}
 
 Today's System Date: ${today}
@@ -388,8 +388,8 @@ Correctly map all column headers and data fields for:
       headers: {
         Authorization: `Bearer ${effectiveKey}`,
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://gurupharma.local",
-        "X-Title": "Guru Pharma GRN Intelligent Parser",
+        "HTTP-Referer": "https://curavite.local",
+        "X-Title": "CURAVITE GRN Intelligent Parser",
       },
       body: JSON.stringify({
         model: selectedModel,

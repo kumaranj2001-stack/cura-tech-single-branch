@@ -20,7 +20,7 @@ function grnIntelligentParserPlugin(): Plugin {
           res.end(
             JSON.stringify({
               status: "ok",
-              service: "Guru Pharma GRN Document Parsing (Vite Middleware)",
+              service: "CURAVITE GRN Document Parsing (Vite Middleware)",
               timestamp: new Date().toISOString(),
             })
           );

@@ -384,7 +384,7 @@ const Settings: React.FC = () => {
 
   // Pharmacy Profile form state (updates store profile and invoice headers)
   const [storeForm, setStoreForm] = useState({
-    name: storeProfile?.name || data.branches[0]?.storeName || data.branches[0]?.name || "Guru Pharmacy",
+    name: storeProfile?.name || data.branches[0]?.storeName || data.branches[0]?.name || "CURAVITE Pharmacy",
     tagline: storeProfile?.tagline || "",
     gstNumber: storeProfile?.gstNumber || data.branches[0]?.gstNumber || "",
     dlNumber: storeProfile?.dlNumber || "",
@@ -395,7 +395,7 @@ const Settings: React.FC = () => {
 
   React.useEffect(() => {
     setStoreForm({
-      name: storeProfile?.name || data.branches[0]?.storeName || data.branches[0]?.name || "Guru Pharmacy",
+      name: storeProfile?.name || data.branches[0]?.storeName || data.branches[0]?.name || "CURAVITE Pharmacy",
       tagline: storeProfile?.tagline || "",
       gstNumber: storeProfile?.gstNumber || data.branches[0]?.gstNumber || "",
       dlNumber: storeProfile?.dlNumber || "",
@@ -628,7 +628,7 @@ const Settings: React.FC = () => {
                 <Input
                   value={storeForm.name}
                   onChange={(e) => setStoreForm({ ...storeForm, name: e.target.value })}
-                  placeholder="e.g. Guru Pharmacy"
+                  placeholder="e.g. CURAVITE Pharmacy"
                 />
               </div>
               <div>
@@ -671,7 +671,7 @@ const Settings: React.FC = () => {
                 <Input
                   value={storeForm.email}
                   onChange={(e) => setStoreForm({ ...storeForm, email: e.target.value })}
-                  placeholder="e.g. contact@gurupharmacy.com"
+                  placeholder="e.g. contact@curavite.com"
                 />
               </div>
               <div className="sm:col-span-2">
@@ -1387,7 +1387,7 @@ const Settings: React.FC = () => {
         <CardBody>
           <div className="font-semibold text-slate-800 dark:text-slate-100 mb-2">ℹ️ About</div>
           <div className="text-sm text-slate-600 dark:text-slate-400 space-y-1">
-            <div><b>Guru</b> — Pharmacy Management System v1.0</div>
+            <div><b>CURAVITE</b> — Pharmacy Management System v1.0</div>
             <div>Built with React, Vite, TypeScript & Tailwind CSS</div>
             <div>Data syncs through the cloud. The Developer can backup or restore pharmacy records from this page.</div>
           </div>
